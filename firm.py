@@ -32,6 +32,7 @@ class Firm:
         # State variables
         self.capital = 100.0  # Initial capital stock
         self.labor = 0.0
+        self.desired_labor = 0.0  # Labor demand before market clearing
         self.output = 0.0
         self.revenue = 0.0
         self.wage_bill = 0.0
@@ -53,13 +54,16 @@ class Firm:
         
         Args:
             total_labor_supply: Total available workers in the economy
+        
+        Returns:
+            Desired labor demand (may be rationed by market clearing)
         """
         # Simplified labor demand with diminishing returns to capital
         # Use a square root to prevent explosive growth
         base_demand = max(1.0, (self.capital ** 0.5) * 0.5)
         # Cap labor demand at reasonable level
-        self.labor = min(base_demand, 100.0)
-        return self.labor
+        self.desired_labor = min(base_demand, 100.0)
+        return self.desired_labor
     
     def produce(self):
         """
@@ -105,6 +109,7 @@ class Firm:
     def reset_period(self):
         """Reset flow variables at the start of each period."""
         self.labor = 0.0
+        self.desired_labor = 0.0
         self.output = 0.0
         self.revenue = 0.0
         self.wage_bill = 0.0

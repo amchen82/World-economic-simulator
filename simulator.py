@@ -118,7 +118,17 @@ class EconomicSimulator:
             labor_demand = firm.calculate_labor_demand(total_labor_supply)
             total_labor_demand += labor_demand
         
-        # Allocate labor to firms (simplified: all demand is met)
+        # Allocate labor to firms based on supply constraints
+        if total_labor_demand > 0:
+            # If demand exceeds supply, ration proportionally
+            allocation_ratio = min(1.0, total_labor_supply / total_labor_demand)
+            for firm in self.firms:
+                firm.labor = firm.desired_labor * allocation_ratio
+        else:
+            for firm in self.firms:
+                firm.labor = 0.0
+        
+        # Firms produce with allocated labor
         for firm in self.firms:
             firm.produce()
             firm.calculate_revenue(self.price_level)
