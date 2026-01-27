@@ -1,0 +1,46 @@
+{
+  "simulation": {
+    "time_steps": 100,
+    "random_seed": 42
+  },
+  "households": {
+    "count": 1000,
+    "labor_participation_rate": 0.65,
+    "consumption_propensity": 0.8
+  },
+  "firms": {
+    "sectors": [
+      {
+        "name": "manufacturing",
+        "firm_count": 50,
+        "wage_baseline": 50000,
+        "productivity": 1.0
+      },
+      {
+        "name": "services",
+        "firm_count": 100,
+        "wage_baseline": 45000,
+        "productivity": 0.9
+      }
+    ],
+    "cobb_douglas_alpha": 0.3,
+    "investment_rate": 0.2
+  },
+  "government": {
+    "tax_rate": 0.25,
+    "transfer_per_capita": 5000
+  },
+  "central_bank": {
+    "inflation_target": 0.02,
+    "policy_rate_baseline": 0.03,
+    "taylor_coefficient": 1.5
+  },
+  "trade": {
+    "openness": 0.3,
+    "tariff_rate": 0.05
+  },
+  "banking": {
+    "loan_to_income_max": 3.0,
+    "credit_spread": 0.02
+  }
+}
