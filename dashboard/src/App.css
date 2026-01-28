@@ -1,0 +1,54 @@
+.App {
+  min-height: 100vh;
+}
+
+.App-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  text-align: center;
+}
+
+.App-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2.5rem;
+}
+
+.App-header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.App-nav {
+  background-color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  gap: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.App-nav button {
+  padding: 0.5rem 1.5rem;
+  border: 2px solid #667eea;
+  background-color: white;
+  color: #667eea;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.App-nav button:hover {
+  background-color: #f0f0f0;
+}
+
+.App-nav button.active {
+  background-color: #667eea;
+  color: white;
+}
+
+.App-main {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
