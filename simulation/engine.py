@@ -104,18 +104,33 @@ class EconomicSimulator:
         """Update employment and wages"""
         labor_force = self.params.num_households * self.params.labor_participation_rate
         
-        # Labor demand based on output and wages
-        output = self._calculate_output()
-        labor_demand = min(output / (self.state.average_wage / self.params.productivity), labor_force)
+        # Employment as a fraction of labor force, influenced by economic conditions
+        # Base employment rate around 95% (5% natural unemployment)
+        base_employment_rate = 0.95
         
-        self.state.employment = labor_demand
-        self.state.unemployment_rate = max(0.0, (labor_force - labor_demand) / labor_force)
+        # Adjust for capital accumulation (more capital = more jobs)
+        capital_effect = (self.state.capital_stock / self.params.initial_capital - 1) * 0.1
+        
+        # Adjust for real wage pressure (higher wages = fewer jobs)
+        wage_effect = (self.state.average_wage / self.params.wage_baseline - 1) * -0.2
+        
+        employment_rate = base_employment_rate + capital_effect + wage_effect
+        employment_rate = max(0.90, min(0.98, employment_rate))  # Keep between 90% and 98%
+        
+        target_employment = labor_force * employment_rate
+        
+        # Smooth adjustment toward target
+        adjustment_speed = 0.15
+        self.state.employment = self.state.employment + (target_employment - self.state.employment) * adjustment_speed
+        
+        # Calculate unemployment
+        self.state.unemployment_rate = max(0.0, (labor_force - self.state.employment) / labor_force)
         
         # Wage adjustment based on unemployment (Phillips curve)
-        if self.state.unemployment_rate < 0.05:
-            self.state.average_wage *= 1.02  # Wage increases when tight labor market
-        elif self.state.unemployment_rate > 0.08:
-            self.state.average_wage *= 0.99  # Wage decreases when slack
+        if self.state.unemployment_rate < 0.04:
+            self.state.average_wage *= 1.01  # Wage increases when tight labor market
+        elif self.state.unemployment_rate > 0.07:
+            self.state.average_wage *= 0.995  # Wage decreases when slack
     
     def _update_households(self):
         """Update household consumption and saving"""
@@ -133,14 +148,17 @@ class EconomicSimulator:
         """Update firm investment and capital accumulation"""
         output = self._calculate_output()
         wage_bill = self.state.employment * self.state.average_wage
-        profits = output - wage_bill
+        profits = max(0, output - wage_bill)
         
-        # Investment as fraction of profits
-        self.state.investment = max(0, self.params.investment_rate * profits)
+        # Investment as fraction of profits, plus some baseline investment
+        baseline_investment = self.state.capital_stock * 0.03  # Replace 3% depreciation
+        profit_investment = self.params.investment_rate * profits
+        self.state.investment = baseline_investment + profit_investment
         
-        # Capital accumulation (with 5% depreciation)
-        depreciation = 0.05 * self.state.capital_stock
+        # Capital accumulation (with 3% depreciation)
+        depreciation = 0.03 * self.state.capital_stock
         self.state.capital_stock += self.state.investment - depreciation
+        self.state.capital_stock = max(self.params.initial_capital * 0.5, self.state.capital_stock)  # Floor
     
     def _update_government(self):
         """Update government finances"""
