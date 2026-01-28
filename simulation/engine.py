@@ -91,7 +91,7 @@ class EconomicSimulator:
     
     def _calculate_output(self) -> float:
         """Calculate output using Cobb-Douglas production function"""
-        alpha = 0.3  # Labor share
+        alpha = 0.3  # Capital share (1-alpha is labor share)
         K = self.state.capital_stock
         L = self.state.employment
         A = self.params.productivity

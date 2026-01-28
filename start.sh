@@ -3,6 +3,22 @@
 
 echo "Starting World Economic Simulator..."
 
+# Cleanup function
+cleanup() {
+    echo ""
+    echo "Shutting down services..."
+    if [ ! -z "$API_PID" ]; then
+        kill $API_PID 2>/dev/null
+    fi
+    if [ ! -z "$DASHBOARD_PID" ]; then
+        kill $DASHBOARD_PID 2>/dev/null
+    fi
+    exit 0
+}
+
+# Trap SIGINT (Ctrl+C) and call cleanup
+trap cleanup SIGINT SIGTERM
+
 # Start the API server in the background
 echo "Starting API server on port 5000..."
 cd "$(dirname "$0")"

@@ -17,6 +17,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend
 
 # In-memory storage for scenarios and results
+# Note: Data is not persisted and will be lost on server restart
 scenarios: Dict[str, Dict[str, Any]] = {}
 results: Dict[str, Dict[str, Any]] = {}
 
@@ -48,13 +49,33 @@ def create_scenario():
     """Create a new scenario"""
     data = request.json
     
+    # Validate parameters if provided
+    parameters = data.get('parameters', {})
+    validation_errors = []
+    
+    if 'time_steps' in parameters and (parameters['time_steps'] < 1 or parameters['time_steps'] > 10000):
+        validation_errors.append('time_steps must be between 1 and 10000')
+    if 'num_households' in parameters and parameters['num_households'] < 1:
+        validation_errors.append('num_households must be positive')
+    if 'num_firms' in parameters and parameters['num_firms'] < 1:
+        validation_errors.append('num_firms must be positive')
+    if 'tax_rate' in parameters and (parameters['tax_rate'] < 0 or parameters['tax_rate'] > 1):
+        validation_errors.append('tax_rate must be between 0 and 1')
+    if 'consumption_propensity' in parameters and (parameters['consumption_propensity'] < 0 or parameters['consumption_propensity'] > 1):
+        validation_errors.append('consumption_propensity must be between 0 and 1')
+    if 'labor_participation_rate' in parameters and (parameters['labor_participation_rate'] < 0 or parameters['labor_participation_rate'] > 1):
+        validation_errors.append('labor_participation_rate must be between 0 and 1')
+    
+    if validation_errors:
+        return jsonify({'error': 'Validation failed', 'details': validation_errors}), 400
+    
     scenario_id = str(uuid.uuid4())
     scenario = {
         'id': scenario_id,
         'name': data.get('name', 'Unnamed Scenario'),
         'description': data.get('description', ''),
         'created_at': datetime.utcnow().isoformat(),
-        'parameters': data.get('parameters', {})
+        'parameters': parameters
     }
     
     scenarios[scenario_id] = scenario
@@ -112,26 +133,32 @@ def run_simulation(scenario_id):
     scenario = scenarios[scenario_id]
     params_dict = scenario.get('parameters', {})
     
-    # Create simulation parameters
-    params = SimulationParameters(**params_dict)
-    
-    # Run simulation
-    simulator = EconomicSimulator(params)
-    simulator.run()
-    
-    # Store results
-    simulation_results = simulator.get_results()
-    results[scenario_id] = {
-        'scenario_id': scenario_id,
-        'scenario_name': scenario['name'],
-        'completed_at': datetime.utcnow().isoformat(),
-        'data': simulation_results
-    }
-    
-    return jsonify({
-        'message': 'Simulation completed',
-        'scenario_id': scenario_id
-    })
+    try:
+        # Create simulation parameters
+        params = SimulationParameters(**params_dict)
+        
+        # Run simulation
+        simulator = EconomicSimulator(params)
+        simulator.run()
+        
+        # Store results
+        simulation_results = simulator.get_results()
+        results[scenario_id] = {
+            'scenario_id': scenario_id,
+            'scenario_name': scenario['name'],
+            'completed_at': datetime.utcnow().isoformat(),
+            'data': simulation_results
+        }
+        
+        return jsonify({
+            'message': 'Simulation completed',
+            'scenario_id': scenario_id
+        })
+    except Exception as e:
+        return jsonify({
+            'error': 'Simulation failed',
+            'details': str(e)
+        }), 500
 
 
 @app.route('/api/scenarios/<scenario_id>/results', methods=['GET'])
@@ -152,15 +179,36 @@ def compare_scenarios():
     if not scenario_ids:
         return jsonify({'error': 'No scenario IDs provided'}), 400
     
+    # Validate all scenarios exist and have results
+    missing_scenarios = []
+    missing_results = []
+    
+    for scenario_id in scenario_ids:
+        if scenario_id not in scenarios:
+            missing_scenarios.append(scenario_id)
+        elif scenario_id not in results:
+            missing_results.append(scenario_id)
+    
+    if missing_scenarios:
+        return jsonify({
+            'error': 'Some scenarios not found',
+            'missing_scenarios': missing_scenarios
+        }), 404
+    
+    if missing_results:
+        return jsonify({
+            'error': 'Some scenarios do not have results. Please run simulations first.',
+            'scenarios_without_results': [scenarios[sid]['name'] for sid in missing_results]
+        }), 400
+    
     comparison = []
     for scenario_id in scenario_ids:
-        if scenario_id in scenarios and scenario_id in results:
-            comparison.append({
-                'scenario_id': scenario_id,
-                'scenario_name': scenarios[scenario_id]['name'],
-                'parameters': scenarios[scenario_id]['parameters'],
-                'results': results[scenario_id]['data']
-            })
+        comparison.append({
+            'scenario_id': scenario_id,
+            'scenario_name': scenarios[scenario_id]['name'],
+            'parameters': scenarios[scenario_id]['parameters'],
+            'results': results[scenario_id]['data']
+        })
     
     return jsonify({'scenarios': comparison})
 
